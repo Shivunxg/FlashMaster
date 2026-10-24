@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  passwordSalt String
+  name         String
+  isPremium    Boolean  @default(false)
+  streak       Int      @default(0)
+  lastStudyAt  DateTime?
+  notifyEnabled Boolean @default(true)
+  soundEnabled  Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  decks    Deck[]
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Deck {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  subject   String
+  color     String   @default("primary")
+  createdAt DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards Card[]
+}
+
+model Card {
+  id             String    @id @default(cuid())
+  deckId         String
+  front          String
+  back           String
+  example        String?
+  // SM-2 scheduling state
+  easeFactor     Float     @default(2.5)
+  intervalDays   Float     @default(0)
+  repetitions    Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  deck    Deck        @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  reviews ReviewLog[]
+}
+
+model ReviewLog {
+  id         String   @id @default(cuid())
+  cardId     String
+  grade      String // "again" | "hard" | "good" | "easy"
+  reviewedAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
