@@ -1,5 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 
 const SESSION_COOKIE = "fm_session";
@@ -54,6 +55,16 @@ export async function getCurrentUser() {
 
   if (!session || session.expiresAt < new Date()) return null;
   return session.user;
+}
+
+/**
+ * Use in every /admin page and admin server action. Re-checks the DB flag
+ * on every call — never trust a client-supplied admin flag.
+ */
+export async function requireAdmin() {
+  const user = await getCurrentUser();
+  if (!user || !user.isAdmin) redirect("/admin/login");
+  return user;
 }
 
 export async function destroySession() {
