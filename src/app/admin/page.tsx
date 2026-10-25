@@ -20,20 +20,20 @@ export default async function AdminDashboardPage() {
   const premiumPct = userCount > 0 ? Math.round((premiumCount / userCount) * 100) : 0;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-8">
-      <header className="flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <span className="font-serif text-lg font-bold">FlashMaster Admin</span>
-          <span className="text-xs text-ink-soft">Signed in as {admin.email}</span>
+          <span className="truncate text-xs text-ink-soft">Signed in as {admin.email}</span>
         </div>
-        <form action={adminLogoutAction}>
+        <form action={adminLogoutAction} className="flex-shrink-0">
           <button type="submit" className="text-sm font-semibold text-again">
             Log Out
           </button>
         </form>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3">
         <Stat label="Users" value={userCount} />
         <Stat label="Decks" value={deckCount} />
         <Stat label="Cards" value={cardCount} />
@@ -43,8 +43,36 @@ export default async function AdminDashboardPage() {
 
       <section className="flex flex-col gap-3">
         <span className="font-serif text-base font-semibold">Users</span>
-        <div className="overflow-x-auto rounded-2xl border border-border">
-          <table className="w-full min-w-[640px] text-left text-sm">
+
+        {/* Mobile: stacked cards */}
+        <div className="flex flex-col gap-2.5 sm:hidden">
+          {users.map((u) => (
+            <div key={u.id} className="flex flex-col gap-2.5 rounded-2xl border border-border p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-semibold">{u.name}</span>
+                  <span className="truncate text-xs text-ink-soft">{u.email}</span>
+                </div>
+                <div className="flex flex-shrink-0 gap-1.5">
+                  <PremiumToggle userId={u.id} isPremium={u.isPremium} />
+                  <AdminToggle userId={u.id} isAdmin={u.isAdmin} disabled={u.id === admin.id} />
+                </div>
+              </div>
+              <div className="flex gap-4 text-xs text-ink-soft">
+                <span>{u._count.decks} decks</span>
+                <span>{u.streak} day streak</span>
+                <span>
+                  Joined{" "}
+                  {u.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden overflow-x-auto rounded-2xl border border-border sm:block">
+          <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-sunken text-xs text-ink-soft">
                 <th className="px-4 py-2.5 font-semibold">Name</th>
@@ -67,31 +95,10 @@ export default async function AdminDashboardPage() {
                     {u.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </td>
                   <td className="px-4 py-2.5">
-                    <form action={toggleUserPremiumAction}>
-                      <input type="hidden" name="userId" value={u.id} />
-                      <button
-                        type="submit"
-                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-                          u.isPremium ? "bg-primary-soft text-primary" : "bg-surface-sunken text-ink-soft"
-                        }`}
-                      >
-                        {u.isPremium ? "Premium" : "Free"}
-                      </button>
-                    </form>
+                    <PremiumToggle userId={u.id} isPremium={u.isPremium} />
                   </td>
                   <td className="px-4 py-2.5">
-                    <form action={toggleUserAdminAction}>
-                      <input type="hidden" name="userId" value={u.id} />
-                      <button
-                        type="submit"
-                        disabled={u.id === admin.id}
-                        className={`rounded-full px-2.5 py-1 text-xs font-bold disabled:opacity-40 ${
-                          u.isAdmin ? "bg-primary text-white" : "bg-surface-sunken text-ink-soft"
-                        }`}
-                      >
-                        {u.isAdmin ? "Admin" : "—"}
-                      </button>
-                    </form>
+                    <AdminToggle userId={u.id} isAdmin={u.isAdmin} disabled={u.id === admin.id} />
                   </td>
                 </tr>
               ))}
@@ -105,9 +112,50 @@ export default async function AdminDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex flex-col gap-1 rounded-2xl border border-border p-4">
-      <span className="font-serif text-xl font-semibold">{value}</span>
-      <span className="text-xs text-ink-soft">{label}</span>
+    <div className="flex flex-col gap-1 rounded-2xl border border-border p-3 sm:p-4">
+      <span className="font-serif text-lg font-semibold sm:text-xl">{value}</span>
+      <span className="text-[11px] text-ink-soft sm:text-xs">{label}</span>
     </div>
+  );
+}
+
+function PremiumToggle({ userId, isPremium }: { userId: string; isPremium: boolean }) {
+  return (
+    <form action={toggleUserPremiumAction}>
+      <input type="hidden" name="userId" value={userId} />
+      <button
+        type="submit"
+        className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${
+          isPremium ? "bg-primary-soft text-primary" : "bg-surface-sunken text-ink-soft"
+        }`}
+      >
+        {isPremium ? "Premium" : "Free"}
+      </button>
+    </form>
+  );
+}
+
+function AdminToggle({
+  userId,
+  isAdmin,
+  disabled,
+}: {
+  userId: string;
+  isAdmin: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <form action={toggleUserAdminAction}>
+      <input type="hidden" name="userId" value={userId} />
+      <button
+        type="submit"
+        disabled={disabled}
+        className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold disabled:opacity-40 ${
+          isAdmin ? "bg-primary text-white" : "bg-surface-sunken text-ink-soft"
+        }`}
+      >
+        {isAdmin ? "Admin" : "—"}
+      </button>
+    </form>
   );
 }
